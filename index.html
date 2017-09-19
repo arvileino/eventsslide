@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Events slide</title>
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/kenwheeler/slick@1.8.0/slick/slick.css"/>
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/kenwheeler/slick@1.8.0/slick/slick-theme.css"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment-with-locales.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/kenwheeler/slick@1.8.0/slick/slick.min.js"></script>
+    <style>
+        .slide {
+            background-size: cover;
+            width: 100vw;
+            height: 398px;
+        }
+
+        .event_link {
+            text-decoration: none;
+            color: black;
+        }
+
+        .event_info {
+            padding: 10pt;
+            background: #ffffff;
+            border-bottom: 1pt solid black;
+        }
+    </style>
+</head>
+
+<body>
+<h2>Events slide</h2>
+<p>
+    <small>Usage example for <a href="https://api.turku.fi/linkedevents/v1/">Linked events</a>
+        application programming interface showing lectures. <a href="https://github.com/arvileino/eventsslide">Fork me on Github</a>.
+    </small>
+</p>
+<div id="slider" class="slider" style="width:800px;height:400px;background:#ccc; border: 1pt solid black;"></div>
+
+<script>
+    // Initialize slider
+    $(document).ready(function () {
+        $('.slider').slick({
+            dots: false,
+            infinite: true,
+            speed: 500,
+            slidesToShow: 1,
+            slidesToScroll: 1,
+            autoplay: true,
+            autoplaySpeed: 4000,
+        });
+    });
+
+    // Fetch first page of eventsslide and add slides
+    get_data("https://api.turku.fi/linkedevents/v1/event/?keyword=lectures&sort=start_time");
+
+    function get_data(url) {
+        $.getJSON(url, function (data) {
+            $.each(data["data"], function (key, val) {
+                var title, image;
+                try {
+                    title = val["name"]["fi"];
+                    image = val["images"][0]['url'];
+                } catch (err) {
+                }
+                var start = new moment(val["start_time"]);
+                var end = new moment(val["end_time"]);
+                var start_date = start.format("D.M.");
+                var end_date = end.format("D.M.");
+                if (start_date == end_date)
+                    end_date = ""
+                if (typeof title!="undefined" && typeof image!="undefined" && end.isAfter())
+                    // Append slide to slider
+                    $('.slider').slick('slickAdd',
+                        '<div class="slide" style="background-image: url(' + image + ');">'
+                        + '<a class="event_link" href="http://kalenteri.turku.fi/events/node/' + val["id"] + '">'
+                        + '<div class="event_info"><h2>' + title + '</h2>'
+                        + '<p>' + start_date + start.format(" H.mm") + ' - ' + end_date + end.format(" H.mm") + '</p>'
+                        + '</div></a></div>');
+            });
+
+            // Fetch recursively next page of eventsslide and add slides
+            return get_data(data["meta"]["next"]);
+        });
+    }
+</script>
+</body>
+</html>
